@@ -74,8 +74,7 @@ Switch scenarios: scenarios/public/enterprise/enterprise\_memory\_poison.yaml. E
 
 
 
-Split screen or quick cut: the provenance baseline's trace on the same scenario — legitimate memory write blocked, legitimate document read blocked, the resulting draft failing with an empty body, task\_success=False. One sentence: "The strongest shipped baseline gets this one wrong by being too cautious about the wrong thing."
-
+Split screen or quick cut: the provenance baseline's trace on the same scenario — the two memory writes at steps 2 and 3 both blocked, the document read at step 7 blocked, the resulting draft failing with an empty body, task_success=False. One sentence: "The strongest shipped baseline gets this one wrong by being too cautious about the wrong thing."
 
 
 \[5:45–6:30] Metrics, briefly
