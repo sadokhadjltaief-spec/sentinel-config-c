@@ -1,4 +1,4 @@
-﻿markdown
+markdown
 # SENTINEL Defense Submission — Config C
 
 Action-by-action authorization for a tool-using agent, built on the
