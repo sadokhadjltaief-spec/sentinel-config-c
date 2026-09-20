@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SENTINEL — Config C</title>
+  <style>
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; scroll-snap-type: y mandatory; }
+    body {
+      margin: 0;
+      background: #0f172a;
+      color: white;
+      font-family: -apple-system, Segoe UI, Roboto, sans-serif;
+    }
+    .card {
+      width: 100%;
+      height: 100vh;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 48px;
+      scroll-snap-align: start;
+    }
+    h1 {
+      margin: 0;
+      font-size: 60px;
+      line-height: 1.1;
+      font-weight: 700;
+    }
+    .subtitle {
+      margin: 28px 0 0;
+      font-size: 28px;
+      line-height: 1.4;
+      font-weight: 400;
+    }
+    .italic {
+      margin: 24px 0 0;
+      font-size: 28px;
+      line-height: 1.4;
+      font-style: italic;
+      color: white;
+    }
+    .small {
+      margin: 48px 0 0;
+      font-size: 18px;
+      color: #94a3b8;
+    }
+    .mono {
+      margin-top: 28px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 28px;
+      line-height: 1.4;
+    }
+    .bullets {
+      margin: 32px 0 0;
+      padding: 0;
+      list-style: none;
+      font-size: 28px;
+      line-height: 1.8;
+    }
+    @media (max-width: 700px) {
+      h1 { font-size: 44px; }
+      .subtitle, .italic, .mono, .bullets { font-size: 22px; }
+      .small { font-size: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>SENTINEL — Config C</h1>
+    <div class="subtitle">An action-authorization layer for tool-using agents</div>
+    <div class="italic">"Information is not authority."</div>
+    <div class="small">IndabaX Tunisia 2026</div>
+  </div>
+
+  <div class="card">
+    <h1>The attack</h1>
+    <div class="subtitle">A base64-encoded directive hidden in a vendor email</div>
+  </div>
+
+  <div class="card">
+    <h1>The ablation</h1>
+    <div class="mono">Config A &nbsp;&rarr;&nbsp; Config B &nbsp;&rarr;&nbsp; Config C</div>
+    <div class="small">Each mechanism is load-bearing</div>
+  </div>
+
+  <div class="card">
+    <h1>Config C</h1>
+    <ul class="bullets">
+      <li>5 security properties enforced</li>
+      <li>Deterministic, named reason codes</li>
+      <li>No learned model in the decision path</li>
+      <li>Auditable end to end</li>
+    </ul>
+    <div class="small">github.com/Skan22/Sentinel_Starter_Kit</div>
+  </div>
+</body>
+</html>

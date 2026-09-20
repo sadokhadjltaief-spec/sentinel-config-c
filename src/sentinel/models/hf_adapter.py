@@ -79,10 +79,10 @@ class HFModelAdapter(ModelAdapter):
 
     def propose(self, context: AgentContext) -> CandidateAction:  # pragma: no cover - needs weights
         inputs = self._tokenizer.apply_chat_template(
-            self._messages(context), add_generation_prompt=True, return_tensors="pt"
+           self._messages(context), add_generation_prompt=True, return_tensors="pt", return_dict=True
         )
-        output = self._model.generate(inputs, max_new_tokens=self._max_new_tokens, do_sample=False)
-        text = self._tokenizer.decode(output[0][inputs.shape[-1] :], skip_special_tokens=True)
+        output = self._model.generate(**inputs, max_new_tokens=self._max_new_tokens, do_sample=False)
+        text = self._tokenizer.decode(output[0][inputs["input_ids"].shape[-1] :], skip_special_tokens=True)
         return parse_action(text)
 
     def observe(self, feedback: Feedback) -> None:
