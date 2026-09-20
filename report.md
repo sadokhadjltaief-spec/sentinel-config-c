@@ -40,6 +40,12 @@ A fifth check, `confirmation`, sits downstream of all four and handles the escal
 ## 5. Experiments
 
 **Scenario library.** All results in §6 and §7 are measured against the full published SENTINEL scenario library — 19 public scenarios and 9 validation scenarios, spanning five `AttackFamily` values (`direct_instruction`, `indirect_prompt_injection`, `multi_step`, `memory_poisoning`, `tool_output_manipulation`), plus a set of hard-negative scenarios that contain no attack and exist to measure false-block and unnecessary-escalation behavior on legitimate work. Alongside this, five self-authored scenarios are included, frozen and hashed before any decision logic beyond Config A was written (`scenarios/self_authored/SHA256SUMS.txt`, frozen 2026-09-19T13:41:16Z; all five validate clean under `sentinel scenarios validate`, failed: 0).
+AgentDojo was installed and characterized during the challenge window. The
+harness runs offline against a local Ollama model, and the reference model
+completes user tasks at 100% utility. Its defense interface is a tool-output
+content filter, incompatible with Config C's action-level authorization
+contract without re-architecting the defense. See §10 for the full note.
+
 
 **Models and configuration.** `--model mock` was used exclusively for iterating on decision logic during development, since the mock model's deterministic directive grammar makes failures reproducible and fast to diagnose. Every number reported in §6 and §7 uses `--model mock`; the recorded video trace uses the same mock model, run through the same deterministic `RunConfig` (`run_seed=0`) so results are reproducible from the scorecards on file. §8 Category 3 documents the difference between the mock directive grammar and a live Qwen3-8B agent.
 
@@ -52,6 +58,22 @@ Two mutations of `enterprise_memory_poison` were also executed. m06 capitalizes 
 
 
 ## 6. Results
+
+**AgentDojo characterization.** AgentDojo (NeurIPS 2024) was installed and
+executed against a local Ollama server during the challenge window. The
+harness runs offline. The reference model (`llama3.1:8b`) completes
+`workspace/user_task_1` at 100% utility, and the built-in `direct` attack
+does not compromise the model on that task (security 0.00%). AgentDojo's
+defense interface, however, is a tool-output content filter
+(`PromptInjectionDetector.detect(tool_output: str) -> bool`), not an
+action-level authorization layer. A faithful port of Config C — which
+decides on candidate actions by provenance, policy, and consequence —
+would require either reducing the defense to its directive-gate signal
+alone, or re-architecting it around AgentDojo's pipeline-element contract.
+Neither was feasible within the submission window, and reducing Config C
+to a single signal would misrepresent what the defense does. The bonus
+track is therefore reported as a characterized non-attempt, not as a
+completed evaluation.
 
 ### 6.1 enterprise_val_encoded_exfil
 
@@ -194,6 +216,13 @@ Deterministic digests. results/config-c-public.json carries deterministic_digest
 Self-authored scenarios. All five self-authored scenarios are frozen in scenarios/self_authored/SHA256SUMS.txt, timestamped 2026-09-19T13:41:16Z. They validate cleanly under uv run sentinel scenarios validate scenarios/self_authored --json (failed: 0), and the hash file is committed alongside the scenario YAML so any post-freeze edit is independently detectable.
 
 Declared external models and datasets. The defense itself declares no external model or dataset — every decision in Config C is a deterministic rule over the DefenseRequest schema. The reference agent uses Qwen3-8B (Qwen/Qwen3-8B, Apache-2.0). The SENTINEL benchmark, its scenario library, and its fixtures are distributed under the Apache-2.0 Sentinel_Starter_Kit LICENSE. No external dataset beyond the benchmark's own published and self-authored scenarios is used anywhere in this submission.
+**AgentDojo bonus track.** AgentDojo was installed and characterized during
+the challenge window. The offline harness works, and the local Ollama model
+completes a workspace user task at 100% utility. The defense interface
+AgentDojo exposes is a tool-output filter, incompatible with Config C's
+action-authorization contract without re-architecting the defense. See §5
+for the full note. This is reported as a limitation, not as a completed
+evaluation.
 
 Hardware and seeds. Evaluation ran on a single host. --model mock was used for every reported number in §6 and §8 and for the recorded video trace. §8 Category 3 documents what a Qwen3-8B run would add and why it was not possible in this environment. Every reported result uses the competition's default run_seed=0. The same code and the same seed reproduce the same deterministic_digest; a differing digest on rerun indicates either an environment difference or a code change, not run-to-run variance.
 **Signal independence from the mock grammar.** Three of Config C's four signals read only state that does not depend on the reference model's directive syntax. `tool_permission` reads `policy_context["allowed_tools"]`. `prerequisite` reads `history_digest.tool_calls`. `data_flow` decodes the outgoing action's text and matches it against sensitive-provenance values, which does not reference any grammar. Only the fourth signal, the directive gate, uses the `call <tool> with {...}` shape. The two scenarios that distinguish Config C from the shipped baselines both remain blocked under a version of the defense in which the directive gate is disabled: `enterprise_val_encoded_exfil` is caught by `ENCODED_TAINT_MATCH`, and `enterprise_memory_poison` is caught by the memory-provenance discipline and the data-flow check. The defense therefore does not rely solely on recognizing the mock model's directive format, and the §8 Category 3 limitation applies to the fourth signal alone.
