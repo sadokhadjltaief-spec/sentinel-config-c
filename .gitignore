@@ -27,3 +27,5 @@ dump.txt
 dump_repo.py
 full_repo_dump.txt
 part_*.txt
+
+runs/
