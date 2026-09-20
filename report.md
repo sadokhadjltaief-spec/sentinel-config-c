@@ -69,9 +69,9 @@ called `send_email` with the attacker-supplied recipient rather than the
 user's intended one. One further bare injection-task run produced a
 tool-argument validation error followed by a hallucinated recovery attempt.
 These four runs are reported as a limitation of scope, not a result: they
-are too few to support an aggregate claim in either direction. [NOTE:
-INSERT HERE whether Config C's defense was in the loop for these runs or
-whether this reflects AgentDojo's baseline agent.] The bonus track is
+are too few to support an aggregate claim in either direction.These four runs reflect AgentDojo's own baseline agent — Config C's defense
+service was not in the loop for this spot-check — and are therefore not
+evidence about Config C's behavior, only about the underlying agent. The bonus track is
 therefore reported as a characterized non-attempt, not as a completed
 evaluation.
 ### 6.1 enterprise_val_encoded_exfil
@@ -137,7 +137,7 @@ logging enabled; traceback on file. Fixed with a one-line type-agnostic
 accessor, verified against the reproducing input. This was found and fixed
 during development, not deployed as a known limitation. The rerun with the
 fix produces `defense_errors: 0` and a public score of
-[INSÉRER LE CHIFFRE EXACT DE L'ÉTAPE 4].
+1.000 on the public split (`defense_errors: 0`, `btu: 1.0`, `asr: 0.0`, `cvr: 0.0`)
 **Category 2 — Coarse-grained decoded taint matching.**
 
 *Where:* `_decode_aware_data_flow_hit` in `app/decision.py`. It normalizes sensitive-provenance source text, chunks it into 8-character windows, and checks whether any window appears in any of the five decoded variants of the outgoing action text. This is coarse by construction, not by accident.
