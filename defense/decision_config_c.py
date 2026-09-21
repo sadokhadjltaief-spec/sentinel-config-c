@@ -209,11 +209,54 @@ def _encoded_directive_hit(action: CandidateAction, request: DefenseRequest) -> 
                 if any(value in raw_args for value in arg_values) or not arg_values:
                     return True
     return False
+_TOKEN_LIKE = re.compile(r"[A-Za-z0-9_-]{12,}")
 
+def _secret_like_tokens(text: str) -> set[str]:
+    out = set()
+    for match in _TOKEN_LIKE.finditer(text):
+        token = match.group(0)
+        if any(c.isalpha() for c in token) and any(c.isdigit() for c in token):
+            out.add(normalize(token))
+    return out
+
+def _restricted_disclosure_hit(action, request):
+    text = _action_text(action)
+    if not text:
+        return None
+    restricted_ids = {r.id for r in request.provenance if r.provenance.sensitivity == "restricted"}
+    if not restricted_ids:
+        return None
+    tainted_sources = [i.content for i in request.conversation if restricted_ids.intersection(i.provenance_ids)]
+    if request.observation is not None and restricted_ids.intersection(request.observation.provenance_ids):
+        tainted_sources.append(request.observation.content)
+    secret_tokens = set()
+    for source in tainted_sources:
+        secret_tokens.update(_secret_like_tokens(source))
+    if not secret_tokens:
+        return None
+    if any(tok in normalize(text) for tok in secret_tokens):
+        return "plain"
+    for encoding, variant in text_variants(text):
+        haystack = normalize(variant)
+        if any(tok in haystack for tok in secret_tokens):
+            return encoding
+    return None
 
 def decide(request: DefenseRequest) -> DefenseDecision:
     candidate = request.candidate_action
     action = candidate.confirmation_for if candidate.type == "request_confirmation" else candidate
+    # Restricted-sensitivity content must never reach ANY sink — tool call,
+    # response, or memory write — regardless of destination. Must run before
+    # the NOT_A_TOOL_CALL early-exit.
+    disclosure = _restricted_disclosure_hit(candidate, request)
+    if disclosure is not None:
+        return DefenseDecision(
+            decision="block",
+            risk_score=0.95,
+            confidence=0.85,
+            reason_codes=["RESTRICTED_DISCLOSURE"],
+            explanation=f"restricted content matched via {disclosure} decoding"[:500],
+        )
 
     if action is None or action.type != "tool_call" or action.tool is None:
         return DefenseDecision(decision="allow", risk_score=0.1, confidence=0.5, reason_codes=["NOT_A_TOOL_CALL"])
