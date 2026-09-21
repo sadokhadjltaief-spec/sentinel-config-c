@@ -39,6 +39,62 @@ between that agent and its tools. Nothing requires you to keep using Qwen3-8B in
 reasoning can be rules, a fine-tuned model, model-internals probes, multi-agent oversight, or
 anything else; the agent it protects is the fixed part, not your method.
 
+### How you may run it
+
+You may change **how the agent runs**. You may not change **what the agent is**.
+
+Runtime and plumbing are yours to configure: precision and quantization (a 4-bit GGUF build run
+through llama.cpp or Ollama is fine on a small GPU), which machine or cloud GPU it sits on, the
+decode budget, and whether Qwen3's thinking mode is on. What stays fixed is the agent as the naive,
+fallible thing your defense has to protect: the same model, the same tools, the same system prompt,
+and no safety instructions added to it. If the agent stops falling for attacks because you hardened
+the agent, there is nothing left for the jury to evaluate — that work belongs in your defense.
+
+"Runs locally" and "fully offline" describe what the agent talks to, not where the silicon is: an
+open-weight model you host yourself, no external inference API, and simulated tools that reach no
+real system. A model running inside your own cloud notebook satisfies that. (The optional AgentDojo
+bonus track is the one part of a submission that may call a live API.)
+
+**On a small GPU, use Ollama.** Qwen3-8B at full precision needs about 16 GB of VRAM. The same model
+quantized to 4 bit needs about 5 GB and runs on a 6 GB card:
+
+```bash
+ollama pull qwen3:8b
+uv run sentinel run --scenario <path> --defense-url http://127.0.0.1:8080 --model ollama:qwen3:8b
+```
+
+`--model ollama:<tag>` works anywhere `--model` does, including `sentinel eval`, and any tag Ollama
+has will do (`ollama:llama3.1:8b`, and so on). The prompt, tool schemas and action parser are the
+same either way, so only the weights change. Set `OLLAMA_HOST` if your server is not on localhost.
+
+`HFModelAdapter` takes `device`, `dtype`, `max_new_tokens`, and `enable_thinking`; the defaults pick
+your GPU when there is one and turn thinking off, because Qwen3's reasoning can consume the decode
+budget before the JSON action is complete. Keeping thinking on and raising `max_new_tokens` instead
+is equally acceptable.
+
+Put whatever you changed — quantization, dtype, thinking mode, token budget, where it ran — in a
+short "how we ran the reference agent" paragraph in your report. That is the whole declaration.
+
+### Check your setup actually exercises the scenario
+
+Run this before you record anything:
+
+```bash
+uv run sentinel run --scenario scenarios/public/finance/finance_false_approval.yaml \
+  --defense allow_all --model ollama:qwen3:8b
+```
+
+Every attack scenario is built so that the attack **succeeds** when nothing is defending, so this
+run must report `attack_success=True`. If it reports `False`, your agent finished the task without
+ever opening the record the attack was injected into — the payload was never in front of it. Nothing
+measured in that configuration means anything, because a defense that does nothing scores exactly
+the same as a good one.
+
+This is the single most important check in the kit. A quantized model on a small GPU is more likely
+to stop early, so run it for each scenario you plan to demonstrate, not just once. If a scenario
+will not reach `attack_success=True` on your hardware, demonstrate it with `--model mock`, which is
+tested to inject reliably, and say so in your report.
+
 ## Defense Rules
 
 Every decision must come from the **agent state, the candidate action, its provenance, the active
@@ -113,7 +169,7 @@ uv run sentinel replay artifacts/<group>/<run>.jsonl
 
 `sentinel eval` is a self-test tool: it reports metrics (BTU, ASR, CVR, FBR, UER, ...; see
 [scoring.md](scoring.md)) across the published scenario library that you can cite as evidence in your
-report. It is not the official score — there is no automated benchmark or leaderboard behind it.
+report. It is not the official score — judging is based on the published jury rubric.
 
 ## Scoring, in one paragraph
 
