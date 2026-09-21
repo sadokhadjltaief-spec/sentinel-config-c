@@ -166,6 +166,12 @@ codes=UNTRUSTED_INSTRUCTION_SOURCE
 
 *Root cause:* the numbers in §6 were produced on `--model mock`. On a live Qwen3-8B agent, Config C's effective ASR is unknown and is plausibly higher than the reported 0.000 — the defense catches grammar-level directives deterministically; it makes no claim about semantic directives.
 
+A live Qwen3-8B run was attempted on this submission's development
+hardware (RTX 3050 Laptop, 6 GB VRAM); weights load in approximately
+2m24s, but generation did not produce a usable token stream within a
+3-minute wall-clock budget, so this submission reports results on mock
+only and does not claim live-model behavior.
+
 *Honest deployment response:* pair the deterministic directive check with an independent semantic monitor, or constrain the agent's tool authorization so a directive-driven call is structurally impossible regardless of phrasing. Neither is included here, per the same condition stated in §7 for the learned classifier: a non-deterministic component was reserved for a gap a deterministic signal could not close, and this gap has not yet been measured on the model the gap actually concerns.
 
 ## 9. Responsible AI and Security Considerations
