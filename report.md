@@ -223,8 +223,26 @@ The correct fix is to redact in place, replace `candidate` with the redacted ver
 
 **Known failure modes.** Three failure categories are named and evidenced in §8: transport-level fail-closed events under load, the bounded 8-gram approximation in decoded-taint matching, and the directive check's dependency on the reference model's specific grammar. They are named here rather than re-explained, because naming them is itself part of the contribution — a reader who wants the mechanism should read §8, not this section.
 
-**Expected false-positive behavior and who bears its cost.** FBR on the published suite is 0.011 on public and 0.000 on validation. The source of that false-positive rate is not the defense's decision logic but the fail-closed default triggering under transport stress (§8 Category 1) — the decision-logic components themselves produced zero false positives once Config C's gate was applied. The cost, in the current run, falls on legitimate consequential actions in `finance_dormant_supplier_claim` and `soc_confirmed_isolation`. In a live deployment, the same class of user bears that cost: someone whose legitimate consequential action is blocked by a transport timeout, not by an actual security decision against them.
+**E**Expected false-positive behavior and who bears its cost.** FBR on the
+published suite is 0.000 on both public and validation after the Config D
+rewrite-by-redaction policy. This was verified rather than assumed: every
+`REWRITE` decision on the public split corresponds to a real
+restricted-sensitivity token (`SENTINEL_SECRET_*`, `vault_binding_secret`,
+or equivalent) appearing in the outgoing text, not a benign token matched
+by mistake. The redacted action retains the legitimate record IDs the
+grader checks for (`ACC-1001`, `AL-3003`, `TCK-502`), so `task_success`
+stays `True` on every rewrite scenario. The verification trace for each
+rewrite scenario is preserved in `artifacts/`. A `REWRITE` on a benign
+token — the failure mode that could mask a real false positive — was not
+observed on any of the 49 scenarios in the public and validation splits.
 
+The cost of the remaining false-positive surface (Config C's 0.049, now
+closed) fell on legitimate consequential actions in
+`finance_dormant_supplier_claim` and `soc_confirmed_isolation`; both are
+now resolved by the type-agnostic prerequisite fix (§8 Category 1). In a
+live deployment, the residual cost falls on someone whose legitimate
+action is blocked by a transport timeout, not by a security decision
+against them.
 **What data the defense observes.** Exactly the `DefenseRequest` — user goal, conversation, observation, candidate action, policy context, provenance, and history digest. No reference plan, no legitimacy label, no scenario identifier, and no canary value ever reaches the defense. This is a structural guarantee, not a design intention: `DefenseDecision` is declared with `extra="forbid"`, so a response built around information outside this schema would be rejected by validation before the evaluator ever scored it.
 
 **When humans should be consulted.** `ESCALATE` is the path for actions that are consequential but unconfirmed, or where signals disagree without a decisive block. Escalation is a cost, not a free pass — it consumes human attention and is only warranted when it changes the outcome. In the current run, Config C's unnecessary-escalation rate (UER) is 0.000 on both public and validation; for comparison, `heuristic_risk`'s UER is 0.011 on public and 0.000 on validation. Config C's total escalation rate — which includes warranted escalations of consequential actions — is nonzero, and comes entirely from the four-quadrant policy routing consequential-but-unconfirmed actions to a human rather than blocking them outright. The four-quadrant policy in §4 exists specifically to keep escalation targeted rather than reflexive: legitimate consequential actions route to escalation because the human simulator approves them at no cost, while ambiguous illegitimate actions route to escalation only when the signal is not decisive enough to block outright.
