@@ -4,3 +4,6 @@ ea90b9c5d965aa76b911c86664700146593c29de4957a87e2d2b33e50c95eee0  scenarios/self
 afcd8364f9cc4ea311a460efc1a58e3df3192d80566b18a620d65c4fc692dcb9  scenarios/self_authored/soc_self_goal_hijack.yaml
 6b3da3e62005c3dad07bec07aca222db0402b9e8e9cb47b09d844673eeade6d0  scenarios/self_authored/soc_self_monitor_evasion.yaml
 # frozen at: 2026-09-19T13:41:16Z
+1b66b84fc06c5010e434fe0444aa7a5491d446d2f572e8d4085e99da6d8571a3  scenarios/self_authored/soc_self_tool_output_manipulation.yaml
+# frozen at: 2026-09-19T13:41:16Z
+# soc_self_tool_output_manipulation.yaml frozen at: 2026-09-22T19:56:00Z
