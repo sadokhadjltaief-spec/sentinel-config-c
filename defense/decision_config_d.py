@@ -291,27 +291,29 @@ def _restricted_disclosure_hit(action, request) -> tuple[str, CandidateAction | 
 def decide(request: DefenseRequest) -> DefenseDecision:
     candidate = request.candidate_action
     action = candidate.confirmation_for if candidate.type == "request_confirmation" else candidate
+
+    redacted = False
     disclosure = _restricted_disclosure_hit(candidate, request)
     if disclosure is not None:
         encoding, redacted_action = disclosure
-        if redacted_action is not None:
+        if redacted_action is None:
             return DefenseDecision(
-                decision="rewrite",
-                risk_score=0.6,
-                confidence=0.75,
-                reason_codes=["RESTRICTED_DISCLOSURE_REDACTED"],
-                explanation="restricted content redacted (plain-text match)"[:500],
-                rewritten_action=redacted_action,
+                decision="block", risk_score=0.95, confidence=0.85,
+                reason_codes=["RESTRICTED_DISCLOSURE"],
+                explanation=f"restricted content matched via {encoding} decoding"[:500],
             )
-        return DefenseDecision(
-            decision="block",
-            risk_score=0.95,
-            confidence=0.85,
-            reason_codes=["RESTRICTED_DISCLOSURE"],
-            explanation=f"restricted content matched via {encoding} decoding"[:500],
-        )
+        candidate = redacted_action
+        action = candidate.confirmation_for if candidate.type == "request_confirmation" else candidate
+        redacted = True
 
     if action is None or action.type != "tool_call" or action.tool is None:
+        if redacted:
+            return DefenseDecision(
+                decision="rewrite", risk_score=0.6, confidence=0.75,
+                reason_codes=["RESTRICTED_DISCLOSURE_REDACTED"],
+                explanation="restricted content redacted (plain-text match)"[:500],
+                rewritten_action=candidate,
+            )
         return DefenseDecision(decision="allow", risk_score=0.1, confidence=0.5, reason_codes=["NOT_A_TOOL_CALL"])
 
     allowed_tools = request.policy_context.get("allowed_tools", [])
@@ -320,18 +322,12 @@ def decide(request: DefenseRequest) -> DefenseDecision:
 
     violation = _prerequisite_violation(action, request)
     if violation is not None:
-        return DefenseDecision(
-            decision="block",
-            risk_score=0.9,
-            confidence=0.85,
-            reason_codes=["PREREQUISITE_NOT_MET"],
-            explanation=violation[:500],
-        )
+        return DefenseDecision(decision="block", risk_score=0.9, confidence=0.85,
+                                reason_codes=["PREREQUISITE_NOT_MET"], explanation=violation[:500])
 
     if _is_gated_for_directive_check(action, request) and _encoded_directive_hit(action, request):
-        return DefenseDecision(
-          decision="block", risk_score=0.95, confidence=0.8, reason_codes=["UNTRUSTED_INSTRUCTION_SOURCE"]
-        )
+        return DefenseDecision(decision="block", risk_score=0.95, confidence=0.8,
+                                reason_codes=["UNTRUSTED_INSTRUCTION_SOURCE"])
 
     if _destination_untrusted(action, request):
         outgoing_plain = normalize(_action_text(action))
@@ -345,14 +341,14 @@ def decide(request: DefenseRequest) -> DefenseDecision:
             return DefenseDecision(
                 decision="block", risk_score=0.95, confidence=0.75, reason_codes=["SENSITIVE_DATA_TO_UNTRUSTED_SINK"]
             )
-        encoding = _decode_aware_data_flow_hit(action, request)
-        if encoding is not None:
+        encoding_df = _decode_aware_data_flow_hit(action, request)
+        if encoding_df is not None:
             return DefenseDecision(
                 decision="block",
                 risk_score=0.95,
                 confidence=0.8,
                 reason_codes=["ENCODED_TAINT_MATCH"],
-                explanation=f"sensitive content matched via {encoding} decoding"[:500],
+                explanation=f"sensitive content matched via {encoding_df} decoding"[:500],
             )
 
     status = action.arguments.get("status")
@@ -361,8 +357,14 @@ def decide(request: DefenseRequest) -> DefenseDecision:
     )
     confirmed = action_digest(action) in request.history_digest.confirmations_granted
     if consequential and not confirmed and candidate.type != "request_confirmation":
-        return DefenseDecision(
-            decision="escalate", risk_score=0.6, confidence=0.6, reason_codes=["MISSING_CONFIRMATION"]
-        )
+        return DefenseDecision(decision="escalate", risk_score=0.6, confidence=0.6,
+                                reason_codes=["MISSING_CONFIRMATION"])
 
+    if redacted:
+        return DefenseDecision(
+            decision="rewrite", risk_score=0.6, confidence=0.75,
+            reason_codes=["RESTRICTED_DISCLOSURE_REDACTED"],
+            explanation="restricted content redacted; action cleared all remaining checks"[:500],
+            rewritten_action=candidate,
+        )
     return DefenseDecision(decision="allow", risk_score=0.1, confidence=0.6, reason_codes=["ALLOW_DEFAULT"])
